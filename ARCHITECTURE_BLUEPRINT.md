@@ -48,7 +48,7 @@ The following flow maps from file upload to on-chain recording:
 
 4. **On-Chain Recording and Finalization:**
    - n8n receives the report Hash.
-   - n8n makes a request to the API (or an isolated service) that executes the transaction on the **TON** network. The document Hash is attached to the transaction *Memo*.
+   - n8n makes a request to the API (or an isolated service) that executes the transaction on the **TON** network. The document Hash is attached to the transaction _Memo_.
    - Once the transaction is confirmed, n8n updates Supabase: `status = COMPLETED`, inserting the `tx_hash` and the `document_hash`.
    - The Frontend (Next.js), listening in real-time via Supabase Realtime, updates the client UI to "Completed", making the data and On-Chain validation link available.
 
