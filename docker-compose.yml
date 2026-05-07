@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  # Supabase local environment mock (simulação básica)
+  # Supabase local environment mock (basic simulation)
   db:
     image: postgres:15
     environment:
@@ -16,7 +16,7 @@ services:
     networks:
       - n2_network
 
-  # Worker Python - Simulando TEE
+  # Python Worker - Simulating TEE
   worker:
     build:
       context: ./workers
