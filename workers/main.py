@@ -3,12 +3,12 @@ import hashlib
 import json
 from datetime import datetime
 
-app = FastAPI(title="N2 Worker Mock", description="Mock do Cofre de Auditoria TEE")
+app = FastAPI(title="N2 Worker Mock", description="Audit Vault TEE Mock")
 
 def mock_process_document(content: bytes) -> dict:
     """
-    Simula o processamento complexo de IA e OCR dentro do enclave.
-    Neste mock, apenas extraímos metadados e simulamos confidencialidade.
+    Simulates complex AI and OCR processing inside the enclave.
+    In this mock, we only extract metadata and simulate confidentiality.
     """
     # ... mock OCR and processing ...
     mock_result = {
@@ -30,14 +30,14 @@ async def process_document(
     try:
         content = await file.read()
 
-        # 1. Simula processamento dentro do Enclave (Isolado e Confidencial)
+        # 1. Simulates processing inside the Enclave (Isolated and Confidential)
         result = mock_process_document(content)
 
-        # 2. Gera o Hash SHA-256 do laudo para registro On-Chain
+        # 2. Generates the SHA-256 Hash of the report for On-Chain registration
         report_str = json.dumps(result, sort_keys=True)
         report_hash = hashlib.sha256(report_str.encode('utf-8')).hexdigest()
 
-        # 3. Retorna os resultados e a prova
+        # 3. Returns the results and the proof
         return {
             "tenant_id": tenant_id,
             "filename": file.filename,

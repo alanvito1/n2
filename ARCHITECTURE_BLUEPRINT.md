@@ -1,63 +1,63 @@
-# ARCHITECTURE BLUEPRINT - Projeto N2 (Cofre e Clean Room de Auditoria Documental)
+# ARCHITECTURE BLUEPRINT - Project N2 (Document Audit Vault and Clean Room)
 
-## Visão Geral
+## Overview
 
-Este documento descreve a arquitetura do MVP do **Projeto N2**, um SaaS B2B focado em auditoria e varredura documental massiva (sectores Farmacêutico e Jurídico) em ambientes ultrasseguros.
+This document describes the MVP architecture of **Project N2**, a B2B SaaS focused on massive document auditing and scanning (Pharmaceutical and Legal sectors) in ultra-secure environments.
 
-Focamos na entrega de valor rápida, segurança by-design, e rastreabilidade on-chain, usando componentes off-the-shelf sempre que possível.
+We focus on fast value delivery, security by design, and on-chain traceability, using off-the-shelf components whenever possible.
 
-## Stack Tecnológico
+## Technology Stack
 
-1. **Frontend (Dashboard & Cliente):**
+1. **Frontend (Dashboard & Client):**
    - **Framework:** Next.js (TypeScript)
-   - **Autenticação:** TON Connect (Carteiras TON) + Supabase Auth.
-   - **Papel:** Painel administrativo focado em Desktop para B2B. Exibe upload de arquivos, status em tempo real do processamento, e listagem de laudos.
+   - **Authentication:** TON Connect (TON Wallets) + Supabase Auth.
+   - **Role:** Administrative panel focused on Desktop for B2B. Displays file upload, real-time processing status, and report listings.
 
 2. **Backend / Database:**
    - **DB / Auth / Storage:** Supabase (PostgreSQL).
-   - **Orquestração / Middleware:** n8n. Responsável por receber webhooks do front-end/Supabase e orquestrar a lógica de negócio, chamando os workers em Python e atualizando o DB.
+   - **Orchestration / Middleware:** n8n. Responsible for receiving webhooks from the frontend/Supabase and orchestrating business logic, calling Python workers and updating the DB.
 
-3. **Workers de Processamento (O "Cofre"):**
-   - **Linguagem / Ecossistema:** Python (LangChain, PyTorch, OCR).
-   - **Ambiente de Execução (TEE Mock):** Containers Docker locais, estritamente isolados, simulando os Enclaves (Confidential Computing) e sem acesso irrestrito à internet, exceto portas de API específicas controladas.
+3. **Processing Workers (The "Vault"):**
+   - **Language / Ecosystem:** Python (LangChain, PyTorch, OCR).
+   - **Execution Environment (TEE Mock):** Strictly isolated local Docker containers, simulating Enclaves (Confidential Computing) with no unrestricted internet access, except for controlled specific API ports.
 
-4. **Rastreabilidade / Blockchain:**
-   - **Rede:** The Open Network (TON).
-   - **Estratégia:** Gravação do Hash SHA-256 do laudo gerado no Memo/Payload de uma transação simples (carteira-para-carteira). Proof of Existence imutável, rápida e de baixo custo.
+4. **Traceability / Blockchain:**
+   - **Network:** The Open Network (TON).
+   - **Strategy:** Recording the SHA-256 Hash of the generated report in the Memo/Payload of a simple transaction (wallet-to-wallet). Immutable, fast, and low-cost Proof of Existence.
 
-## Arquitetura de Dados e Fluxo do Processo
+## Data Architecture and Process Flow
 
-O fluxo a seguir mapeia desde o upload do arquivo até a gravação on-chain:
+The following flow maps from file upload to on-chain recording:
 
-1. **Autenticação e Upload (Next.js + Supabase):**
-   - Cliente acessa o app web e se autentica usando TON Connect.
-   - O cliente realiza o upload de um documento confidencial (ex: Prontuário Médico, Contrato de M&A).
-   - O documento é criptografado pelo frontend e enviado para um Bucket Privado no Supabase Storage.
-   - Um registro é criado no banco de dados (Supabase) na tabela `documents` com status `UPLOADED`.
+1. **Authentication and Upload (Next.js + Supabase):**
+   - Client accesses the web app and authenticates using TON Connect.
+   - The client uploads a confidential document (e.g., Medical Record, M&A Contract).
+   - The document is encrypted by the frontend and sent to a Private Bucket in Supabase Storage.
+   - A record is created in the database (Supabase) in the `documents` table with status `UPLOADED`.
 
-2. **Orquestração (n8n):**
-   - Um evento de inserção (Database Webhook no Supabase) notifica o **n8n**.
-   - O n8n intercepta a chamada, valida os créditos/assinatura do cliente (Lógica de Pay-As-You-Go).
-   - O n8n atualiza o status do documento para `PROCESSING` e despacha o job para o **Python Worker API**.
+2. **Orchestration (n8n):**
+   - An insert event (Database Webhook in Supabase) notifies **n8n**.
+   - n8n intercepts the call, validates client credits/subscription (Pay-As-You-Go logic).
+   - n8n updates the document status to `PROCESSING` and dispatches the job to the **Python Worker API**.
 
-3. **Processamento em "Cofre" (Python Worker em Docker Isolado):**
-   - O Worker recebe o job, baixa o documento (ou o n8n passa o buffer criptografado para o worker que tem a chave).
-   - A extração de dados e auditoria (OCR, IA) ocorrem dentro do Docker (Mock de TEE).
-   - Um laudo (`report`) de auditoria é gerado e resumido em um Hash SHA-256.
-   - O Worker destrói os dados confidenciais da memória após a extração e devolve o Hash e os resultados anonimizados ao n8n.
+3. **"Vault" Processing (Python Worker in Isolated Docker):**
+   - The Worker receives the job, downloads the document (or n8n passes the encrypted buffer to the worker holding the key).
+   - Data extraction and auditing (OCR, AI) occur inside Docker (TEE Mock).
+   - An audit `report` is generated and summarized into a SHA-256 Hash.
+   - The Worker destroys the confidential data from memory after extraction and returns the Hash and anonymized results to n8n.
 
-4. **Gravação On-Chain e Finalização:**
-   - O n8n recebe o Hash do laudo.
-   - O n8n faz a requisição para a API (ou um serviço isolado) que executa a transação na rede **TON**. O Hash do documento é anexado ao *Memo* da transação.
-   - Assim que a transação for confirmada, o n8n atualiza o Supabase: `status = COMPLETED`, inserindo o `tx_hash` e o `document_hash`.
-   - O Frontend (Next.js), ouvindo em tempo real via Supabase Realtime, atualiza a UI do cliente para "Concluído", disponibilizando os dados e o link de validação On-Chain.
+4. **On-Chain Recording and Finalization:**
+   - n8n receives the report Hash.
+   - n8n makes a request to the API (or an isolated service) that executes the transaction on the **TON** network. The document Hash is attached to the transaction *Memo*.
+   - Once the transaction is confirmed, n8n updates Supabase: `status = COMPLETED`, inserting the `tx_hash` and the `document_hash`.
+   - The Frontend (Next.js), listening in real-time via Supabase Realtime, updates the client UI to "Completed", making the data and On-Chain validation link available.
 
-## Monetização: Pay-As-You-Go
+## Monetization: Pay-As-You-Go
 
-- O modelo MRR + Pay-As-You-Go será implementado com Stripe. O modelo de dados contabilizará as auditorias (ex: "X documentos auditados").
-- O n8n poderá bater em um endpoint do Stripe ou consultar um saldo no banco de dados (Supabase) antes de acionar os Workers (Step 2).
+- The MRR + Pay-As-You-Go model will be implemented with Stripe. The data model will account for audits (e.g., "X documents audited").
+- n8n can hit a Stripe endpoint or check a balance in the database (Supabase) before triggering the Workers (Step 2).
 
-## Escalonamento Futuro
+## Future Scaling
 
-- **TEE (Trusted Execution Environments):** Quando a tração justificar os custos, migraremos os containers Docker para AWS Nitro Enclaves, Intel TDX ou GCP Confidential Space, garantindo que mesmo os administradores da infraestrutura não tenham acesso à RAM dos workers.
-- **Smart Contracts:** Dependendo da necessidade de lógicas mais avançadas e compliance de auditores, evoluiremos de "Hash in Memo" para contratos em FunC/Tact na TON.
+- **TEE (Trusted Execution Environments):** When traction justifies the costs, we will migrate Docker containers to AWS Nitro Enclaves, Intel TDX, or GCP Confidential Space, ensuring that even infrastructure administrators do not have access to the workers' RAM.
+- **Smart Contracts:** Depending on the need for more advanced logic and auditor compliance, we will evolve from "Hash in Memo" to FunC/Tact contracts on TON.

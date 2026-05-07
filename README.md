@@ -1,18 +1,18 @@
-# N2 Project: Cofre e Clean Room de Auditoria Documental
+# N2 Project: Document Audit Vault and Clean Room
 
-Este repositório contém o MVP do N2, um SaaS B2B ultrasseguro usando conceitos de TEEs (mockados em Docker na Fase MVP) para Confidential Computing focado em MRR.
+This repository contains the MVP for N2, an ultra-secure B2B SaaS using TEE concepts (mocked in Docker for the MVP phase) for Confidential Computing focused on MRR.
 
-## Componentes
+## Components
 
-*   **`frontend/`**: Aplicação Next.js + TailwindCSS + TON Connect para os clientes (Desktop focus).
-*   **`workers/`**: Serviços em Python (FastAPI) que rodam dentro de containers estritamente isolados, atuando como o "Cofre Criptográfico" para auditoria (IA/OCR).
-*   **`infrastructure/`**: Definições do banco de dados (Supabase local) e `schema.sql` orientado a Multi-tenancy e Pay-As-You-Go.
-*   **`docker-compose.yml`**: Orquestrador local para os workers e dependências do mock.
+*   **`frontend/`**: Next.js + TailwindCSS + TON Connect application for clients (Desktop focus).
+*   **`workers/`**: Python (FastAPI) services running inside strictly isolated containers, acting as the "Cryptographic Vault" for auditing (AI/OCR).
+*   **`infrastructure/`**: Database definitions (local Supabase) and `schema.sql` oriented towards Multi-tenancy and Pay-As-You-Go.
+*   **`docker-compose.yml`**: Local orchestrator for the workers and mock dependencies.
 
-## Rodando Localmente
+## Running Locally
 
-1. Suba a infraestrutura base:
+1. Spin up the base infrastructure:
    `docker-compose up -d --build`
 
-2. Rode o Frontend:
+2. Run the Frontend:
    `cd frontend && npm install && npm run dev &`
